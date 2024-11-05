@@ -14,7 +14,7 @@ load_dotenv()
 
 API_URL = os.getenv("API_URL")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHANNEL_IDS = ["@testpythonchatquest", "@test2quest"]  # Нужные чаты через массив
+CHANNEL_IDS = ["@ProfiT_Mafia_Chat", "@TestnetProfitMafia"]  # Нужные чаты
 PORT = os.getenv("PORT", "8080")
 RETRY_INTERVAL = 60  
 
