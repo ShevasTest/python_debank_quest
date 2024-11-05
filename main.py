@@ -1,10 +1,9 @@
-# main.py
 import asyncio
 import os
 import time
 import logging
 from dotenv import load_dotenv
-from flask import Flask, Response, jsonify  # Импортируем jsonify
+from flask import Flask, Response
 from api import fetch_quest_data, get_debank_quest_api_headers
 from telegram_bot import send_message
 from models import QuestResponse
@@ -15,7 +14,7 @@ load_dotenv()
 
 API_URL = os.getenv("API_URL")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHANNEL_ID = os.getenv("CHANNEL_ID")
+CHANNEL_IDS = ["@testpythonchatquest", "@test2quest"]  # Нужные чаты через массив
 PORT = os.getenv("PORT", "8080")
 RETRY_INTERVAL = 60  
 
@@ -29,13 +28,6 @@ app = Flask(__name__)
 @app.route('/health')
 def health_check():
     return Response("OK", status=200)
-
-@app.route('/seen_quests', methods=['GET'])  # Новый маршрут
-def seen_quests():
-    if seen_quest_ids:
-        return jsonify(list(seen_quest_ids.keys()))  # Возвращаем список обработанных квестов
-    else:
-        return jsonify([])  # Возвращаем пустой список, если нет обработанных квестов
 
 def init_seen_quests(api_url: str, headers: dict) -> dict:
     logger.info("Инициализация просмотренных квестов...")
@@ -51,7 +43,7 @@ def init_seen_quests(api_url: str, headers: dict) -> dict:
         
     return seen_quest_ids
 
-def process_quests(api_url: str, headers: dict, bot_token: str, channel_id: str, seen_quest_ids: dict):
+def process_quests(api_url: str, headers: dict, bot_token: str, channel_ids: list, seen_quest_ids: dict):
     try:
         quest_response = fetch_quest_data(api_url, headers)
         for quest in quest_response.data.quests:
@@ -65,7 +57,10 @@ def process_quests(api_url: str, headers: dict, bot_token: str, channel_id: str,
                           f"💻 DEBANK QUEST BOT | PROFIT MAFIA"
                 button_text = f"View Quest {xp} XP"
                 button_url = create_quest_url(quest_id)
-                send_message(bot_token, channel_id, message, button_text, button_url)
+                
+                for channel_id in channel_ids:
+                    send_message(bot_token, channel_id, message, button_text, button_url)
+                
                 seen_quest_ids[quest_id] = {}
                 logger.info(f"Отправлено сообщение о новом квесте: {quest_name}")
     except Exception as e:
@@ -75,7 +70,6 @@ def run_http_server():
     app.run(host='0.0.0.0', port=int(PORT))
 
 def main():
-    global seen_quest_ids  # Объявляем как глобальную переменную
     # Получение заголовков API
     headers = {}
     try:
@@ -116,7 +110,7 @@ def main():
     round_counter = 0
     while True:
         logger.info(f"Запуск раунда {round_counter}...")
-        process_quests(API_URL, headers, TELEGRAM_BOT_TOKEN, CHANNEL_ID, seen_quest_ids)
+        process_quests(API_URL, headers, TELEGRAM_BOT_TOKEN, CHANNEL_IDS, seen_quest_ids)
         time.sleep(RETRY_INTERVAL)
         round_counter += 1
 
